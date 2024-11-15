@@ -1,0 +1,92 @@
+version: '3.7'
+
+services:
+  # WordPress
+  wordpress:
+    image: wordpress:php7.4-fpm
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wp_user
+      WORDPRESS_DB_PASSWORD: wp_password
+    networks:
+      - monitoring
+
+  # Nginx
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./wordpress:/var/www/html
+    depends_on:
+      - wordpress
+    networks:
+      - monitoring
+
+  # Mysql
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wp_user
+      MYSQL_PASSWORD: wp_password
+    networks:
+      - monitoring
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - node_exporter
+      - mysqld_exporter
+      - blackbox_exporter
+    networks:
+      - monitoring
+
+  # Node Exporter
+  node_exporter:
+    image: prom/node-exporter
+    networks:
+      - monitoring
+    ports:
+      - 9100:9100
+
+  # MySQL Exporter
+  mysqld_exporter:
+    image: prom/mysqld-exporter
+    networks:
+      - monitoring
+    ports:
+      - 9104:9104
+    volumes:
+      - ./mysqld.yml:/.my.cnf
+
+  # Blackbox Exporter
+  blackbox_exporter:
+    image: prom/blackbox-exporter
+    container_name: blackbox-exporter
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    ports:
+      - "9115:9115"
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+
+volumes:
+  db_data:
