@@ -58,6 +58,20 @@ services:
     networks:
       - monitoring
 
+  # VictoriaMetrics
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    container_name: p2_victoria
+    volumes:
+      - ./data/vmstorage:/storage
+    command:
+      - '--storageDataPath=/storage'
+      - '--retentionPeriod=2w'
+    ports:
+      - "8428:8428"
+    networks:
+      - monitoring
+
   # Node Exporter
   node_exporter:
     image: prom/node-exporter
