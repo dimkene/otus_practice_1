@@ -39,13 +39,26 @@ services:
     networks:
       - monitoring
     volumes:
-      - ./data/vmstorage:/var/lib/mysql
+      - mysql:/var/lib/mysql
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: p4_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafanadb:/var/lib/grafana
 
   # Prometheus
   prometheus:
     image: prom/prometheus:latest
     container_name: p1_prometheus
     volumes:
+      - promdb:/prometheus
       - ./prometheus/:/etc/prometheus/
     ports:
       - "9090:9090"
@@ -76,7 +89,7 @@ services:
     image: victoriametrics/victoria-metrics:latest
     container_name: p2_victoria
     volumes:
-      - ./data/vmstorage:/storage
+      - vmstorage:/storage
     command:
       - '--storageDataPath=/storage'
       - '--retentionPeriod=2w'
@@ -120,3 +133,13 @@ services:
 
 networks:
   monitoring:
+
+volumes:
+  grafanadb:
+    driver: local
+  mysql:
+    driver: local
+  vmstorage:
+    driver: local
+  promdb:
+    driver: local
